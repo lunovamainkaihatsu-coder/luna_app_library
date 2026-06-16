@@ -388,13 +388,13 @@ elif menu == "アプリ図鑑":
                     st.markdown("#### 📸 スクリーンショット")
 
                     try:
-                        st.image(
-                            app["screenshot"],
-                            use_container_width=True
-                        )
-                    except:
-                        st.caption("画像を表示できません")
-
+                    st.image(
+                        app["screenshot"],
+                        width=400
+                    )
+                except:
+                   st.caption("画像を表示できません")
+            
                 if app.get("image"):
 
                     st.markdown("#### 🎨 イメージ画像")

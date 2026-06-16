@@ -402,7 +402,7 @@ elif menu == "アプリ図鑑":
                     try:
                         st.image(
                             app["image"],
-                            use_container_width=True
+                            width=300
                         )
                     except:
                         st.caption("画像を表示できません")

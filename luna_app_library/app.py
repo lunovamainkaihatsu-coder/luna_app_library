@@ -383,29 +383,35 @@ elif menu == "アプリ図鑑":
                     app.get("updated", "未更新")
                 )
                 st.caption(f"最終使用日：{app.get('last_used', '未使用')}")
-                if app.get("screenshot"):
+                img_col1, img_col2 = st.columns(2)
 
-                    st.markdown("#### 📸 スクリーンショット")
+                with img_col1:
 
-                    try:
-                        st.image(
-                            app["screenshot"],
-                            width=400
-                        )
-                    except:
-                       st.caption("画像を表示できません")
-            
-                if app.get("image"):
+                    if app.get("screenshot"):
 
-                    st.markdown("#### 🎨 イメージ画像")
+                        st.markdown("#### 📸 スクリーンショット")
 
-                    try:
-                        st.image(
-                            app["image"],
-                            width=300
-                        )
-                    except:
-                        st.caption("画像を表示できません")
+                        try:
+                            st.image(
+                                app["screenshot"],
+                                width=300
+                            )
+                        except:
+                            st.caption("画像を表示できません")
+
+                with img_col2:
+
+                    if app.get("image"):
+
+                        st.markdown("#### 🎨 イメージ画像")
+
+                        try:
+                            st.image(
+                                app["image"],
+                                width=250
+                            )
+                        except:
+                            st.caption("画像を表示できません")
 
                 col1, col2 = st.columns(2)
                 with col1:

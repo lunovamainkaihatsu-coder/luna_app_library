@@ -225,13 +225,13 @@ if menu == "ホーム":
                     "🌐 アプリを開く",
                     app["url"]
                 )
-st.markdown("## 🌙 Lunaからのおすすめ")
+    st.markdown("## 🌙 Lunaからのおすすめ")
 
-if apps:
+    if apps:
 
-    unused_apps = [
-        app for app in apps
-        if app.get("last_used", "未使用") == "未使用"
+        unused_apps = [
+            app for app in apps
+            if app.get("last_used", "未使用") == "未使用"
     ]
 
     favorite_apps = [

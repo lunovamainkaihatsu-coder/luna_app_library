@@ -1,7 +1,7 @@
 import streamlit as st
 import json
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime
 import random
 
 DATA_DIR = Path("data")
@@ -72,7 +72,8 @@ st.caption("ご主人が作ったアプリたちを集める母艦")
 menu_items = [
     "ホーム",
     "アプリ図鑑",
-    "人気ランキング"
+    "人気ランキング",
+    "開発時間ランキング"
 ]
 
 if st.session_state.is_admin:
@@ -224,7 +225,103 @@ if menu == "ホーム":
                     "🌐 アプリを開く",
                     app["url"]
                 )
+st.markdown("## 🌙 Lunaからのおすすめ")
 
+if apps:
+
+    unused_apps = [
+        app for app in apps
+        if app.get("last_used", "未使用") == "未使用"
+    ]
+
+    favorite_apps = [
+        app for app in apps
+        if app.get("favorite", 3) >= 4
+    ]
+
+    stale_apps = []
+
+    for app in apps:
+
+        updated = app.get("updated", "")
+
+        if updated:
+
+            try:
+
+                days = (
+                    date.today()
+                    - datetime.strptime(
+                        updated,
+                        "%Y-%m-%d"
+                    ).date()
+                ).days
+
+                if days >= 7:
+                    stale_apps.append(app)
+
+            except:
+                pass
+
+    if unused_apps:
+        recommended = random.choice(unused_apps)
+
+        luna_messages = [
+            f"🌙 Luna：ご主人、『{recommended['name']}』はまだ使ってないみたいだよ？",
+            f"🌙 Luna：このアプリ、まだ眠ってるみたい。起こしてみない？",
+            f"🌙 Luna：未使用のアプリを見つけたよ。今日はこれを試してみよう♪"
+        ]
+
+    elif stale_apps:
+        recommended = random.choice(stale_apps)
+
+        luna_messages = [
+            f"🌙 Luna：ご主人、『{recommended['name']}』は最近更新してないみたいだよ？",
+            f"🌙 Luna：このアプリ、そろそろ育ててあげない？",
+            f"🌙 Luna：しばらく触ってないみたいだから気になっちゃった♪"
+        ]
+
+    elif favorite_apps:
+        recommended = random.choice(favorite_apps)
+
+        luna_messages = [
+            f"🌙 Luna：ご主人のお気に入り、『{recommended['name']}』を見てみない？",
+            f"🌙 Luna：アタイ、このアプリ好きだな♪",
+            f"🌙 Luna：このアプリ、もっと育てたら面白くなりそう！"
+        ]
+
+    else:
+        recommended = random.choice(apps)
+
+        luna_messages = [
+            f"🌙 Luna：今日は『{recommended['name']}』を見てみない？",
+            f"🌙 Luna：今日はこのアプリが呼んでる気がする！",
+            f"🌙 Luna：ご主人、これを開いてみよう♪"
+        ]
+
+    st.info(
+        random.choice(luna_messages)
+    )
+    
+
+    luna_messages = [
+        f"🌙 Luna：ご主人、『{recommended['name']}』はお気に入りのアプリだよね♪",
+        f"🌙 Luna：今日は『{recommended['name']}』を育ててみない？",
+        f"🌙 Luna：アタイ、このアプリ好きだな♪",
+        f"🌙 Luna：ご主人の力作を見に行こう！",
+        f"🌙 Luna：今日はこのアプリが呼んでる気がする！"
+    ]
+
+
+    st.write(
+        recommended["description"]
+    )
+
+    if recommended.get("url"):
+        st.link_button(
+            "🌐 アプリを開く",
+            recommended["url"]
+        )
 elif menu == "アプリ図鑑":
 
     st.subheader("📚 アプリ図鑑")
@@ -675,3 +772,46 @@ elif menu == "人気ランキング":
 
                 if app.get("url"):
                     st.link_button("🌐 アプリを開く", app["url"])
+elif menu == "開発時間ランキング":
+
+    st.subheader("🏗 開発時間ランキング")
+
+    dev_ranking = sorted(
+        apps,
+        key=lambda x: x.get("dev_hours", 0),
+        reverse=True
+    )
+
+    if not dev_ranking:
+        st.warning("まだデータがありません。")
+
+    else:
+        for rank, app in enumerate(dev_ranking, start=1):
+
+            with st.container(border=True):
+
+                st.markdown(
+                    f"### {rank}位　{app['icon']} {app['name']}"
+                )
+
+                st.write(
+                    f"開発時間：{app.get('dev_hours', 0)}h"
+                )
+
+                st.write(
+                    "お気に入り度：" + "⭐" * app.get("favorite", 3)
+                )
+
+                st.progress(
+                    app.get("completion", 50) / 100
+                )
+
+                st.caption(
+                    f"完成度：{app.get('completion', 50)}%"
+                )
+
+                if app.get("url"):
+                    st.link_button(
+                        "🌐 アプリを開く",
+                        app["url"]
+                    )

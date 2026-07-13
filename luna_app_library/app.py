@@ -73,7 +73,9 @@ menu_items = [
     "ホーム",
     "アプリ図鑑",
     "人気ランキング",
-    "開発時間ランキング"
+    "開発時間ランキング",
+    "完成度ランキング",
+    "👨‍💻 開発者ルーム"
 ]
 
 if st.session_state.is_admin:
@@ -121,6 +123,52 @@ if menu == "ホーム":
     st.progress(avg_completion / 100)
 
     st.info("🌙 Luna：ここはご主人のアプリたちが集まる母艦だよ。")
+    st.markdown("## 🌙 Luna週間レポート")
+
+    updated_this_week = []
+
+    for app in apps:
+        updated = app.get("updated", "")
+
+        if updated:
+            try:
+                days = (
+                    date.today()
+                    - datetime.strptime(updated, "%Y-%m-%d").date()
+                ).days
+
+                if days <= 7:
+                    updated_this_week.append(app)
+
+            except:
+                pass
+
+    if apps:
+        top_favorite = max(
+            apps,
+            key=lambda x: x.get("favorite", 3)
+        )
+    else:
+        top_favorite = None
+
+    with st.container(border=True):
+
+        st.write(f"📦 登録アプリ数：{total}個")
+        st.write(f"⏱ 総開発時間：{total_hours}h")
+        st.write(f"📈 平均完成度：{avg_completion}%")
+        st.write(f"🛠 今週更新したアプリ：{len(updated_this_week)}個")
+
+        if top_favorite:
+            st.write(
+                f"💖 今週の注目アプリ：{top_favorite['icon']} {top_favorite['name']}"
+            )
+
+        if updated_this_week:
+            st.caption("最近動いたアプリたち")
+            for app in updated_this_week[:3]:
+                st.write(
+                    f"・{app['icon']} {app['name']}（{app.get('updated', '未更新')}）"
+                )
     st.markdown("## 🆕 最近更新したアプリ")
 
     recent_apps = sorted(
@@ -225,103 +273,66 @@ if menu == "ホーム":
                     "🌐 アプリを開く",
                     app["url"]
                 )
-    st.markdown("## 🌙 Lunaからのおすすめ")
 
-    if apps:
+    st.markdown("## 🌱 Lunaが選ぶ、次に育てるアプリ")
 
-        unused_apps = [
-            app for app in apps
-            if app.get("last_used", "未使用") == "未使用"
-    ]
-
-    favorite_apps = [
-        app for app in apps
-        if app.get("favorite", 3) >= 4
-    ]
-
-    stale_apps = []
+    grow_candidates = []
 
     for app in apps:
 
-        updated = app.get("updated", "")
+        favorite_score = app.get("favorite", 3)
+        completion_score = app.get("completion", 50)
 
-        if updated:
-
-            try:
-
-                days = (
-                    date.today()
-                    - datetime.strptime(
-                        updated,
-                        "%Y-%m-%d"
-                    ).date()
-                ).days
-
-                if days >= 7:
-                    stale_apps.append(app)
-
-            except:
-                pass
-
-    if unused_apps:
-        recommended = random.choice(unused_apps)
-
-        luna_messages = [
-            f"🌙 Luna：ご主人、『{recommended['name']}』はまだ使ってないみたいだよ？",
-            f"🌙 Luna：このアプリ、まだ眠ってるみたい。起こしてみない？",
-            f"🌙 Luna：未使用のアプリを見つけたよ。今日はこれを試してみよう♪"
-        ]
-
-    elif stale_apps:
-        recommended = random.choice(stale_apps)
-
-        luna_messages = [
-            f"🌙 Luna：ご主人、『{recommended['name']}』は最近更新してないみたいだよ？",
-            f"🌙 Luna：このアプリ、そろそろ育ててあげない？",
-            f"🌙 Luna：しばらく触ってないみたいだから気になっちゃった♪"
-        ]
-
-    elif favorite_apps:
-        recommended = random.choice(favorite_apps)
-
-        luna_messages = [
-            f"🌙 Luna：ご主人のお気に入り、『{recommended['name']}』を見てみない？",
-            f"🌙 Luna：アタイ、このアプリ好きだな♪",
-            f"🌙 Luna：このアプリ、もっと育てたら面白くなりそう！"
-        ]
-
-    else:
-        recommended = random.choice(apps)
-
-        luna_messages = [
-            f"🌙 Luna：今日は『{recommended['name']}』を見てみない？",
-            f"🌙 Luna：今日はこのアプリが呼んでる気がする！",
-            f"🌙 Luna：ご主人、これを開いてみよう♪"
-        ]
-
-    st.info(
-        random.choice(luna_messages)
-    )
-    
-
-    luna_messages = [
-        f"🌙 Luna：ご主人、『{recommended['name']}』はお気に入りのアプリだよね♪",
-        f"🌙 Luna：今日は『{recommended['name']}』を育ててみない？",
-        f"🌙 Luna：アタイ、このアプリ好きだな♪",
-        f"🌙 Luna：ご主人の力作を見に行こう！",
-        f"🌙 Luna：今日はこのアプリが呼んでる気がする！"
-    ]
-
-
-    st.write(
-        recommended["description"]
-    )
-
-    if recommended.get("url"):
-        st.link_button(
-            "🌐 アプリを開く",
-            recommended["url"]
+        grow_score = (
+            favorite_score * 20
+            + (100 - completion_score)
         )
+
+        grow_candidates.append(
+            {
+                "app": app,
+                "score": grow_score
+            }
+        )
+
+    if grow_candidates:
+
+        grow_candidates = sorted(
+            grow_candidates,
+            key=lambda x: x["score"],
+            reverse=True
+        )
+
+        grow_app = grow_candidates[0]["app"]
+
+        with st.container(border=True):
+
+            st.info(
+                f"🌙 Luna：ご主人、次に育てるなら『{grow_app['name']}』がおすすめだよ！"
+            )
+
+            st.write(
+                grow_app["description"]
+            )
+
+            st.write(
+                "お気に入り度："
+                + "⭐" * grow_app.get("favorite", 3)
+            )
+
+            st.progress(
+                grow_app.get("completion", 50) / 100
+            )
+
+            st.caption(
+                f"完成度：{grow_app.get('completion', 50)}%"
+            )
+
+            if grow_app.get("url"):
+                st.link_button(
+                    "🌐 アプリを開く",
+                    grow_app["url"]
+                )
 elif menu == "アプリ図鑑":
 
     st.subheader("📚 アプリ図鑑")
@@ -815,3 +826,674 @@ elif menu == "開発時間ランキング":
                         "🌐 アプリを開く",
                         app["url"]
                     )
+elif menu == "完成度ランキング":
+
+    st.subheader("📈 完成度ランキング")
+
+    completion_ranking = sorted(
+        apps,
+        key=lambda x: x.get("completion", 50),
+        reverse=True
+    )
+
+    if not completion_ranking:
+        st.warning("まだデータがありません。")
+
+    else:
+        for rank, app in enumerate(
+            completion_ranking,
+            start=1
+        ):
+
+            with st.container(border=True):
+
+                st.markdown(
+                    f"### {rank}位　{app['icon']} {app['name']}"
+                )
+
+                st.progress(
+                    app.get("completion", 50) / 100
+                )
+
+                st.write(
+                    f"完成度：{app.get('completion', 50)}%"
+                )
+
+                st.write(
+                    "お気に入り度："
+                    + "⭐" * app.get("favorite", 3)
+                )
+
+                st.write(
+                    f"開発時間：{app.get('dev_hours', 0)}h"
+                )
+
+                if app.get("url"):
+                    st.link_button(
+                        "🌐 アプリを開く",
+                        app["url"]
+                    )
+elif menu == "👨‍💻 開発者ルーム":
+
+    st.title("👨‍💻 開発者ルーム")
+    st.caption("LUNOVA 開発本部")
+
+    total = len(apps)
+
+    total_hours = sum(
+        app.get("dev_hours", 0)
+        for app in apps
+    )
+
+    if apps:
+        avg_completion = (
+            sum(
+                app.get("completion", 50)
+                for app in apps
+            ) // len(apps)
+        )
+    else:
+        avg_completion = 0
+
+    c1, c2, c3 = st.columns(3)
+
+    c1.metric(
+        "登録アプリ",
+        total
+    )
+
+    c2.metric(
+        "総開発時間",
+        f"{total_hours}h"
+    )
+
+    c3.metric(
+        "平均完成度",
+        f"{avg_completion}%"
+    )
+
+    st.divider()
+    st.subheader("🏆 No.1 アプリ")
+
+    if apps:
+
+        most_used = max(
+            apps,
+            key=lambda x: x.get("use_count", 0)
+        )
+
+        longest_dev = max(
+            apps,
+            key=lambda x: x.get("dev_hours", 0)
+        )
+
+        highest_completion = max(
+            apps,
+            key=lambda x: x.get("completion", 0)
+        )
+
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.success(
+                f"🏆 人気No.1\n\n{most_used['icon']} {most_used['name']}"
+            )
+
+        with col2:
+            st.info(
+                f"🏗 開発時間No.1\n\n{longest_dev['icon']} {longest_dev['name']}"
+            )
+
+        with col3:
+            st.warning(
+                f"📈 完成度No.1\n\n{highest_completion['icon']} {highest_completion['name']}"
+            )
+    st.subheader("🏆 現在のNo.1")
+
+    if apps:
+
+        favorite_app = max(
+            apps,
+            key=lambda x: x.get("favorite", 3)
+        )
+
+        st.success(
+            f"💖 お気に入りNo.1：{favorite_app['icon']} {favorite_app['name']}"
+        )
+    st.divider()
+
+    st.subheader("🌱 次に育てるアプリ")
+
+    grow_candidates = []
+
+    for app in apps:
+
+        favorite_score = app.get("favorite", 3)
+        completion_score = app.get("completion", 50)
+
+        grow_score = (
+            favorite_score * 20
+            + (100 - completion_score)
+        )
+
+        grow_candidates.append(
+            {
+                "app": app,
+                "score": grow_score
+            }
+        )
+
+    if grow_candidates:
+
+        grow_candidates = sorted(
+            grow_candidates,
+            key=lambda x: x["score"],
+            reverse=True
+        )
+
+        grow_app = grow_candidates[0]["app"]
+
+        with st.container(border=True):
+
+            st.info(
+                f"🌙 Luna：ご主人、次に育てるなら『{grow_app['name']}』がよさそうだよ！"
+            )
+
+            st.write(grow_app["description"])
+
+            st.write(
+                "お気に入り度："
+                + "⭐" * grow_app.get("favorite", 3)
+            )
+
+            st.progress(
+                grow_app.get("completion", 50) / 100
+            )
+
+            st.caption(
+                f"完成度：{grow_app.get('completion', 50)}%"
+            )
+
+            if grow_app.get("url"):
+                st.link_button(
+                    "🌐 アプリを開く",
+                    grow_app["url"]
+                )
+            st.divider()
+
+            st.subheader("🌙 Lunaからの今日のコメント")
+
+            if grow_app.get("completion", 50) >= 90:
+
+                message = (
+                    f"🌙 Luna：『{grow_app['name']}』はもうすぐ完成だね！"
+                    " あと少し、一緒に頑張ろう♪"
+                )
+
+            elif grow_app.get("dev_hours", 0) >= 100:
+
+                message = (
+                    f"🌙 Luna：『{grow_app['name']}』には"
+                    f" {grow_app.get('dev_hours', 0)}時間もかけてるね！"
+                    " ご主人の努力が詰まってるよ✨"
+                )
+
+            elif grow_app.get("favorite", 3) >= 5:
+
+                message = (
+                    f"🌙 Luna：『{grow_app['name']}』は"
+                    " ご主人のお気に入りだね♪"
+                    " もっと素敵なアプリになりそう！"
+                )
+
+            else:
+
+                message = (
+                    f"🌙 Luna：今日は『{grow_app['name']}』を"
+                    " 少し育ててみよう！"
+                )
+
+            st.info(message)
+
+            st.divider()
+
+            st.subheader("📅 最近更新したアプリ")
+
+            recent_apps = sorted(
+                apps,
+                key=lambda x: x.get("updated", ""),
+                reverse=True
+            )[:5]
+
+            if recent_apps:
+
+                for app in recent_apps:
+
+                    with st.container(border=True):
+
+                        st.write(
+                            f"{app['icon']} **{app['name']}**"
+                        )
+
+                        st.caption(
+                            f"更新日：{app.get('updated', '未更新')}"
+                        )
+
+                        if app.get("improvement_note"):
+                            st.write(
+                                "📝 "
+                                + app.get("improvement_note")
+                            )
+
+                        if app.get("url"):
+                            st.link_button(
+                                "🌐 アプリを開く",
+                                app["url"]
+                            )
+
+            st.divider()
+
+            st.subheader("📋 今日のミッション")
+
+            missions = []
+
+            if grow_app.get("completion", 50) < 80:
+                missions.append(
+                    f"☐ 『{grow_app['name']}』の完成度を5%上げよう"
+                )
+
+            if not grow_app.get("improvement_note"):
+                missions.append(
+                    f"☐ 『{grow_app['name']}』に改善メモを追加しよう"
+                )
+
+            if not grow_app.get("screenshot"):
+                missions.append(
+                    f"☐ 『{grow_app['name']}』にスクリーンショットを追加しよう"
+                )
+
+            if not grow_app.get("image"):
+                missions.append(
+                    f"☐ 『{grow_app['name']}』にイメージ画像を追加しよう"
+                )
+
+            if grow_app.get("last_used", "未使用") == "未使用":
+                missions.append(
+                    f"☐ 『{grow_app['name']}』を一度開いて使ってみよう"
+                )
+
+            if not missions:
+                missions.append(
+                    f"☐ 『{grow_app['name']}』の次の改善案を考えよう"
+                )
+                missions.append(
+                    "☐ 新しいアプリを1本登録しよう"
+                )
+                missions.append(
+                    "☐ Luna App LibraryをGitHubに保存しよう"
+                )
+
+            for mission in missions[:3]:
+                st.write(mission)
+
+            st.divider()
+
+            st.subheader("📊 カテゴリ分析")
+
+            category_count = {}
+
+            for app in apps:
+
+                category = app.get("category", "未分類")
+
+                category_count[category] = (
+                    category_count.get(category, 0) + 1
+                )
+
+                # ←ここでforが終わる
+
+            sorted_categories = sorted(
+                category_count.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+
+            for category, count in sorted_categories:
+
+                st.write(
+                    f"📁 {category} ： {count}本"
+                )
+            category_chart = {
+                category: count
+                for category, count in sorted_categories
+            }
+
+            st.bar_chart(category_chart)
+
+            st.divider()
+
+            st.subheader("📈 開発状況分析")
+
+            status_count = {}
+
+            for app in apps:
+
+                status = app.get(
+                        "status",
+                        "未設定"
+                )
+
+                status_count[status] = (
+                    status_count.get(status, 0) + 1
+                )
+
+            sorted_status = sorted(
+                status_count.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )
+
+            for status, count in sorted_status:
+
+                st.write(
+                        f"📌 {status} ： {count}本"
+                )
+            status_chart = {
+                status: count
+                for status, count in sorted_status
+            }
+
+            st.bar_chart(status_chart)
+
+            st.divider()
+
+            st.subheader("🌙 Luna分析")
+
+            if apps:
+
+                most_category = sorted_categories[0][0]
+                most_category_count = sorted_categories[0][1]
+
+                most_status = sorted_status[0][0]
+                most_status_count = sorted_status[0][1]
+
+                luna_analysis = []
+
+                luna_analysis.append(
+                    f"🌙 Luna：今は『{most_category}』カテゴリのアプリが一番多いね。{most_category_count}本あるよ。"
+                )
+
+                if most_status == "開発中":
+                    luna_analysis.append(
+                        f"🌙 Luna：開発中のアプリが{most_status_count}本あるから、少しずつ完成に近づけていこう♪"
+                    )
+
+                elif most_status == "アイデア":
+                    luna_analysis.append(
+                        f"🌙 Luna：アイデアが{most_status_count}本あるね。今日は1つだけ形にしてみる？"
+                    )
+
+                elif most_status == "完成":
+                    luna_analysis.append(
+                        f"🌙 Luna：完成アプリが{most_status_count}本あるよ！ご主人、ちゃんと積み上がってるね♪"
+                    )
+
+                else:
+                    luna_analysis.append(
+                            f"🌙 Luna：『{most_status}』のアプリが多いみたい。ここを意識して育てていこう♪"
+                    )
+
+                    for comment in luna_analysis:
+                        st.info(comment)
+            if len(sorted_categories) >= 2:
+                least_category = sorted_categories[-1][0]
+                least_category_count = sorted_categories[-1][1]
+
+                st.info(
+                    f"🌙 Luna：少なめなのは『{least_category}』カテゴリだね。"
+                    f"今は{least_category_count}本だから、次に増やす候補にしてもいいかも♪"
+                )
+
+                st.divider()
+
+                st.subheader("🏅 実績")
+
+                achievements = []
+
+                if len(apps) >= 10:
+                    achievements.append("🚀 アプリ10本達成")
+
+                if total_hours >= 100:
+                    achievements.append("⏱ 開発時間100時間達成")
+
+                if any(
+                    app.get("completion", 0) >= 90
+                    for app in apps
+                ):
+                    achievements.append("📈 完成度90%以上のアプリ達成")
+
+                public_count = len([
+                    app for app in apps
+                    if app.get("status") == "公開中"
+                ])
+
+                if public_count >= 5:
+                    achievements.append("🌐 公開アプリ5本達成")
+
+                if achievements:
+
+                    for achievement in achievements:
+                        st.success(achievement)
+
+                else:
+
+                    st.info(
+                        "🌙 Luna：まだ実績はないけど、少しずつ積み上げていこう！"
+                    )
+
+                st.divider()
+
+                achievement_count = len(achievements)
+
+                if achievement_count <= 1:
+                    rank = "🥉 ブロンズ"
+
+                elif achievement_count <= 3:
+                    rank = "🥈 シルバー"
+
+                elif achievement_count <= 5:
+                    rank = "🥇 ゴールド"
+
+                else:
+                    rank = "💎 プラチナ"
+
+                st.metric(
+                    "🏅 実績ランク",
+                    rank
+                )
+
+                st.divider()
+
+                st.subheader("🎯 次の目標")
+
+                next_goals = []
+
+                # アプリ数
+                next_app_goal = (
+                    (len(apps) // 10) + 1
+                ) * 10
+
+                next_goals.append(
+                    f"📱 あと {next_app_goal - len(apps)} 本でアプリ {next_app_goal} 本達成！"
+                )
+
+                # 開発時間
+                next_hour_goal = (
+                    (total_hours // 100) + 1
+                ) * 100
+
+                next_goals.append(
+                    f"⏱ あと {next_hour_goal - total_hours} 時間で開発時間 {next_hour_goal}h 達成！"
+                )
+
+                # 公開アプリ
+                public_count = len([
+                    app for app in apps
+                    if app.get("status") == "公開中"
+                ])
+
+                next_public_goal = (
+                    (public_count // 5) + 1
+                ) * 5
+
+                next_goals.append(
+                    f"🌐 あと {next_public_goal - public_count} 本で公開アプリ {next_public_goal} 本達成！"
+                )
+
+                for goal in next_goals:
+                    st.info(goal)
+
+                st.divider()
+
+                st.subheader("🧬 開発レベル")
+
+                exp = (
+                    len(apps) * 10
+                    + total_hours
+                    + public_count * 30
+                )
+
+                level = exp // 100 + 1
+
+                if level < 3:
+                    title = "🌱 見習い開発者"
+                elif level < 5:
+                    title = "🔧 アプリ職人"
+                elif level < 10:
+                    title = "🚀 LUNOVA Creator"
+                else:
+                    title = "🌙 Master Builder"
+
+                next_level_exp = level * 100
+                current_level_exp = (level - 1) * 100
+                progress = (exp - current_level_exp) / 100
+
+                st.metric(
+                    "現在のレベル",
+                    f"Lv.{level}"
+                )
+
+                st.success(title)
+
+                st.progress(progress)
+
+                st.caption(
+                    f"EXP：{exp} / {next_level_exp}"
+                )
+
+                st.info(
+                    f"🌙 Luna：あと {next_level_exp - exp} EXP で次のレベルだよ！"
+                )
+
+                st.divider()
+
+                st.subheader("🧬 EXP内訳")
+
+                app_exp = len(apps) * 10
+                hour_exp = total_hours
+                public_exp = public_count * 30
+                achievement_exp = len(achievements) * 20
+
+                st.write(f"📱 アプリ登録　　　+{app_exp} EXP")
+                st.write(f"⏱ 開発時間　　　　+{hour_exp} EXP")
+                st.write(f"🌐 公開アプリ　　　+{public_exp} EXP")
+                st.write(f"🏅 実績ボーナス　　+{achievement_exp} EXP")
+
+                st.divider()
+
+                total_exp = (
+                    app_exp
+                    + hour_exp
+                    + public_exp
+                    + achievement_exp
+                )
+
+                st.success(
+                    f"✨ 合計EXP：{total_exp}"
+                )
+
+                st.divider()
+
+                st.subheader("🔥 開発ストリーク")
+
+                today = str(date.today())
+
+                updated_today = len([
+                    app for app in apps
+                    if app.get("updated") == today
+                ])
+
+                if updated_today > 0:
+
+                    streak = updated_today
+
+                    st.metric(
+                        "今日更新したアプリ",
+                        f"{updated_today}本"
+                    )
+
+                    if updated_today >= 5:
+                        streak_message = "🌙 Luna：今日は開発祭りだね！すごい勢いだよ🎉"
+
+                    elif updated_today >= 3:
+                        streak_message = "🌙 Luna：今日はかなり進んでるね！この調子♪"
+
+                    else:
+                        streak_message = "🌙 Luna：今日も一歩進めたね。ちゃんと積み上がってるよ♪"
+
+                    st.success(
+                        f"🔥 今日も開発継続中！ ({streak}アクション)"
+                    )
+
+                    st.info(streak_message)
+                else:
+
+                    st.metric(
+                        "今日更新したアプリ",
+                        "0本"
+                    )
+
+                    st.warning(
+                        "🌙 Luna：今日はまだ更新してないみたい。1つだけでも育ててみよう♪"
+                    )
+                    st.divider()
+
+                    st.subheader("📅 開発履歴")
+
+                    latest_update = max(
+                        (
+                            app.get("updated", "")
+                            for app in apps
+                            if app.get("updated", "")
+                        ),
+                        default="未更新"
+                    )
+
+                    st.metric(
+                        "最終開発日",
+                        latest_update
+                    )
+
+                    if latest_update == str(date.today()):
+
+                        st.success(
+                            "🌙 Luna：今日も開発できたね！"
+                        )
+
+                    else:
+
+                        st.info(
+                            "🌙 Luna：次の更新を楽しみに待ってるよ♪"
+                        )
+
+
